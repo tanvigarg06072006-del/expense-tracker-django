@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-5">
+
+    <h2>💱 Currency Converter</h2>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <input 
+            name="from_currency" 
+            placeholder="From (USD)" 
+            class="form-control mb-2"
+            value="{{ request.POST.from_currency }}"
+        >
+
+        <input 
+            name="to_currency" 
+            placeholder="To (INR)" 
+            class="form-control mb-2"
+            value="{{ request.POST.to_currency }}"
+        >
+
+        <input 
+            name="amount" 
+            type="number" 
+            placeholder="Amount" 
+            class="form-control mb-2"
+            value="{{ request.POST.amount }}"
+        >
+
+        <button class="btn btn-primary">
+            Convert
+        </button>
+
+    </form>
+
+    <!-- RESULT -->
+    {% if result %}
+        <div class="alert alert-success mt-3">
+            Converted Amount: {{ result }}
+        </div>
+    {% endif %}
+
+    <!-- ERROR -->
+    {% if error %}
+        <div class="alert alert-danger mt-3">
+            {{ error }}
+        </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}

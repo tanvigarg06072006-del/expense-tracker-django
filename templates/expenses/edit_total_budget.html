@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-5">
+
+    <div class="card shadow p-4">
+
+        <h3>Edit Monthly Budget</h3>
+
+        <form method="POST">
+
+            {% csrf_token %}
+
+            <input
+                type="number"
+                name="total_budget"
+                value="{{ budget.total_budget }}"
+                class="form-control mb-3"
+                required
+            >
+
+            <button
+                type="submit"
+                class="btn btn-success">
+                Save Changes
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

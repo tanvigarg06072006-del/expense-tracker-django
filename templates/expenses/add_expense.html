@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="card p-4">
+
+    <h2>Add Expense</h2>
+
+    <form method="POST">
+
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <div class="mb-3" id="noteContainer" style="display:none;">
+
+            <label class="form-label">
+                Note (Required for Other)
+            </label>
+
+            <input
+                type="text"
+                name="note"
+                id="noteField"
+                class="form-control"
+                placeholder="Enter expense details">
+
+        </div>
+
+        <button class="btn btn-success">
+            Save Expense
+        </button>
+
+    </form>
+
+</div>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function() {
+
+    const categorySelect =
+        document.querySelector('select[name="category"]');
+
+    const noteDiv =
+        document.getElementById("noteContainer");
+
+    if (!categorySelect || !noteDiv) return;
+
+    noteDiv.style.display = "none";
+
+    categorySelect.addEventListener("change", function() {
+
+        if (this.value === "Other") {
+
+            noteDiv.style.display = "block";
+
+            document.getElementById("noteField").required = true;
+
+        } else {
+
+            noteDiv.style.display = "none";
+
+            document.getElementById("noteField").required = false;
+
+            document.getElementById("noteField").value = "";
+
+        }
+
+    });
+
+});
+
+</script>
+
+{% endblock %}

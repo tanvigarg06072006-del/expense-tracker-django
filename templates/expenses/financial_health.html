@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-5">
+
+<div class="card shadow-lg p-4 rounded-4">
+
+<h2 class="text-center mb-4">📊 Financial Health Dashboard</h2>
+
+<div class="row g-3">
+
+    <div class="col-md-4">
+        <div class="p-3 bg-primary text-white rounded">
+            <h5>Monthly Budget</h5>
+            <h3>₹{{ monthly_budget }}</h3>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="p-3 bg-success text-white rounded">
+            <h5>Total Expense</h5>
+            <h3>₹{{ total_expense }}</h3>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="p-3 bg-dark text-white rounded">
+            <h5>Remaining Budget</h5>
+            <h3>₹{{ remaining_budget }}</h3>
+        </div>
+    </div>
+
+</div>
+
+<hr>
+
+<h5>📈 Budget Tracking</h5>
+
+{{ chart_data|json_script:"chart-data" }}
+
+<div style="width: 100%; max-width: 600px; height: 250px; margin: auto;">
+    <canvas id="compareChart"></canvas>
+</div>
+
+<hr>
+
+<h5 class="text-center">📊 Category Budget vs Expense</h5>
+
+{{ category_data|json_script:"category-data" }}
+
+
+<div class="row g-4">
+
+    <!-- PIE CHARTS -->
+    <div class="col-md-6 text-center">
+        <h6>✈️ Travel (Monthly)</h6>
+        <div style="width:180px; height:180px; margin:auto;">
+            <canvas id="travelChart"></canvas>
+        </div>
+    </div>
+
+    <div class="col-md-6 text-center">
+        <h6>🧾 Bills (Monthly)</h6>
+        <div style="width:180px; height:180px; margin:auto;">
+            <canvas id="billsChart"></canvas>
+        </div>
+    </div>
+
+    <!-- BAR CHARTS -->
+    <div class="col-md-4 text-center">
+        <h6>🍔 Food (Daily/Weekly)</h6>
+        <div style="width:250px; height:200px; margin:auto;">
+        <canvas id="foodChart"></canvas>
+        </div>
+    </div>
+
+    <div class="col-md-4 text-center">
+        <h6>🛍️ Shopping (Daily/Weekly)</h6>
+        <div style="width:250px; height:200px; margin:auto;">
+        <canvas id="shoppingChart"></canvas>
+        </div>
+    </div>
+
+    <div class="col-md-4 text-center">
+        <h6>📦 Other (Daily/Weekly)</h6>
+        <div style="width:250px; height:200px; margin:auto;">
+        <canvas id="otherChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<div class="alert alert-info text-center fs-5 mt-4">
+    {{ status }}
+</div>
+
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const data = JSON.parse(document.getElementById('chart-data').textContent);
+    const cat = JSON.parse(document.getElementById('category-data').textContent);
+
+    new Chart(document.getElementById('compareChart'), {
+        type: 'line',
+        data: {
+            labels: data.map(i => i.day),
+            datasets: [
+                {
+                    label: "Ideal",
+                    data: data.map(i => i.ideal),
+                    borderColor: "blue",
+                    fill: false
+                },
+                {
+                    label: "Actual",
+                    data: data.map(i => i.actual),
+                    borderColor: "red",
+                    fill: false
+                }
+            ]
+        }
+    });
+
+    function get(catName) {
+        return cat.find(i => i.category === catName) || {};
+    }
+
+    function pieChart(id, catName) {
+        const d = get(catName);
+        new Chart(document.getElementById(id), {
+            type: "pie",
+            data: {
+                labels: ["Spent", "Remaining Budget"],
+                datasets: [{
+                    data: [d.spent || 0, (d.budget || 0) - (d.spent || 0)]
+                }]
+            }
+        });
+    }
+
+    function barChart(id, catName) {
+        const d = get(catName);
+        new Chart(document.getElementById(id), {
+            type: "bar",
+            data: {
+                labels: ["Budget", "Spent"],
+                datasets: [{
+                    label: catName,
+                    data: [
+                    Number(d.budget || 0),
+                    Number(d.spent || 0)
+                    ],
+                    backgroundColor: [
+                    "#0d6efd",
+                    "#dc3545"
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y:{
+                        beginAtZero : true
+                        
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    pieChart("travelChart", "Travel");
+    pieChart("billsChart", "Bills");
+
+    barChart("foodChart", "Food");
+    barChart("shoppingChart", "Shopping");
+    barChart("otherChart", "Other");
+
+});
+</script>
+
+{% endblock %}
