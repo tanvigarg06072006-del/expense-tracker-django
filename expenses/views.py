@@ -17,28 +17,48 @@ from django.contrib.auth.models import User
 from django.db.models.functions import TruncMonth
 from django.shortcuts import get_object_or_404
 from django.db.models.functions import TruncMonth, TruncDay
+from django.http import JsonResponse
 
 def dashboard(request):
 
-    search = request.GET.get("search")
-    category = request.GET.get("category")
-
-    # -------------------------
-    # 1. RECENT EXPENSES (SAFE TO SLICE)
-    # -------------------------
     expenses = Expense.objects.filter(user=request.user)
+    from_date = request.GET.get("from_date")
+    to_date = request.GET.get("to_date")
 
-    if search:
-        expenses = expenses.filter(title__icontains=search)
+    if from_date:
+       expenses = expenses.filter(
+           created_at__gte=from_date
+        )
 
-    if category:
-        expenses = expenses.filter(category=category)
+    if to_date:
+       expenses = expenses.filter(
+           created_at__lte=to_date
+           )
+       
+    history_expenses = Expense.objects.none()
 
-    expenses = expenses.order_by("-id")[:5]   # ✅ slice ONLY here
+    if from_date or to_date:
 
-    # -------------------------
-    # 2. MONTHLY EXPENSES (NO SLICE)
-    # -------------------------
+        history_expenses = Expense.objects.filter(
+            user=request.user
+        )
+
+        if from_date:
+            history_expenses = history_expenses.filter(
+               created_at__gte=from_date
+        )
+
+        if to_date:
+           history_expenses = history_expenses.filter(
+              created_at__lte=to_date
+        )
+
+        history_expenses = history_expenses.order_by("-created_at")
+    
+    
+    recent_expenses = Expense.objects.filter(
+        user=request.user
+    ).order_by("-id")[:5]
     monthly_expenses = (
         Expense.objects
         .filter(user=request.user)   # ✅ fresh queryset (IMPORTANT FIX)
@@ -52,11 +72,21 @@ def dashboard(request):
     months_count = len(monthly_expenses)
 
     average_monthly = total_sum / months_count if months_count > 0 else 0
+    print("FROM DATE =", from_date)
+    print("TO DATE =", to_date)
+
+    for e in history_expenses:
+        print(
+            e.title,
+            e.created_at
+        ) 
 
     return render(request, "expenses/dashboard.html", {
-        "expenses": expenses,
+        
         "monthly_expenses": monthly_expenses,
-        "average_monthly": average_monthly
+        "average_monthly": average_monthly,
+        "history_expenses": history_expenses,
+        "recent_expenses": recent_expenses
     })
 
 
@@ -211,7 +241,14 @@ def financial_health_page(request):
 
     remaining_budget = monthly_budget - total_expense
 
-    status = "Overspending ⚠️" if total_expense > expected_expense else "On Track ✅"
+    if monthly_budget > 0 and remaining_budget > monthly_budget / 2:
+        summary = "Excellent financial management.More than 50% of your budget is still available."
+
+    elif remaining_budget >0:
+        summary = "You are spending within your budget,but monitor your expenses carefully."
+
+    else:
+        summary= "Your expenses have exceeded your allocated budget. Consider reducing discretionary spending."        
 
     chart_data = []
     running_total = 0
@@ -249,7 +286,8 @@ def financial_health_page(request):
             "category": cat,
             "budget": budget,
             "spent": spent,
-            "remaining": max(budget - spent, 0)
+            "remaining": max(budget - spent, 0),
+            "over_budget": spent > budget
         })
 
     return render(request, "expenses/financial_health.html", {
@@ -258,15 +296,10 @@ def financial_health_page(request):
         "remaining_budget": remaining_budget,
         "ideal_daily_expense": round(ideal_daily_expense, 2),
         "expected_expense": round(expected_expense, 2),
-        "status": status,
         "chart_data": chart_data,
-        "category_data": category_data
+        "category_data": category_data,
+        "summary": summary,
     })
-
-
-
-
-
 @login_required
 def budget_planner(request):
 
@@ -279,10 +312,12 @@ def budget_planner(request):
         month= date.today().strftime("%B")
 
     if not year:
-        year = date.today().year    
+        year = date.today().year  
+
+     
         
     month = month.strip().capitalize()
-    year = int(year)
+    year = int(year) if year else date.today().year
 
     budgets = Budget.objects.filter(
         user=request.user,
@@ -293,7 +328,7 @@ def budget_planner(request):
     total_budget_obj = budgets.filter(is_total=True).first()
     total_budget = total_budget_obj.total_budget if total_budget_obj else 0
 
-    allocations = budgets.filter(is_total=False)
+    allocations = budgets.filter(is_total=False).order_by("id")
 
     total_allocated = allocations.aggregate(
         total=Sum("total_budget")
@@ -328,9 +363,9 @@ def budget_planner(request):
                     is_total=True
                 )
 
-            return redirect(f"/budget/?month={month}&year={year}")
+            return redirect(f"/budget/?month={month}&year={year}&popup=1")
 
-        elif request.POST.get("category"):
+        elif request.POST.get("action") == "allocation":
 
             category = request.POST.get("category")
             amount = float(request.POST.get("monthly_budget"))
@@ -351,7 +386,7 @@ def budget_planner(request):
                     is_total=False
                 )
 
-                return redirect(f"/budget/?month={month}&year={year}")
+                return redirect(f"/budget/?month={month}&year={year}&popup=1")
 
     all_budgets = Budget.objects.filter(
         user=request.user,
@@ -361,6 +396,27 @@ def budget_planner(request):
     all_history = Budget.objects.filter(
         user=request.user
     ).order_by("-year","-month")
+
+    allocation_data = [
+       {
+          "category": item.category,
+          "amount": float(item.total_budget)
+       }
+       for item in allocations
+    ]
+ 
+
+    allocation_percent = 0
+    if total_budget > 0:
+        allocation_percent = round(
+        (total_allocated / total_budget) * 100,
+        2
+    )
+
+    popup = request.GET.get("popup")
+    show_modal = popup == "1"  
+    print("URL POPUP =", popup)
+    print("SHOW MODAL =", show_modal)   
 
     return render(request, "expenses/budget_planner.html", {
         "budgets": budgets,
@@ -372,8 +428,44 @@ def budget_planner(request):
         "month": month,
         "year": year,
         "all_budgets": all_budgets,
-        "all_history": all_history
+        "all_history": all_history,
+        "allocation_data": allocation_data,
+        "allocation_percent": allocation_percent,
+        "budget_exists": total_budget > 0,
+        "show_modal": show_modal
     })
+
+@login_required
+def budget_history_detail(request, budget_id):
+
+    total_budget = get_object_or_404(
+        Budget,
+        id=budget_id,
+        user=request.user,
+        is_total=True
+    )
+
+    allocations = Budget.objects.filter(
+        user=request.user,
+        month=total_budget.month,
+        year=total_budget.year,
+        is_total=False
+    )
+
+    data = {
+        "month": total_budget.month,
+        "year": total_budget.year,
+        "total_budget": float(total_budget.total_budget),
+        "allocations": [
+            {
+                "category": a.category,
+                "amount": float(a.total_budget)
+            }
+            for a in allocations
+        ]
+    }
+
+    return JsonResponse(data)
 
 @login_required
 def edit_budget(request, budget_id):
@@ -436,7 +528,6 @@ def edit_total_budget(request,pk):
             "budget": budget
         }
     )
-    
     
 @login_required
 def delete_total_budget(request,pk):
@@ -567,7 +658,6 @@ def ai_suggestions(request):
             "total": total
         }
     ) 
-
 
 
 def send_daily_reminder():

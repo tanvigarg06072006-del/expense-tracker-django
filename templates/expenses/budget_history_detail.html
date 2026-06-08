@@ -1,0 +1,35 @@
+<h2>📅 Budget History Details</h2>
+
+<h4>{{ budget.month }} {{ budget.year }}</h4>
+
+<div class="row">
+    <div class="col-md-4">
+        Total Budget: ₹{{ budget.total_budget }}
+    </div>
+
+    <div class="col-md-4">
+        Allocated: ₹{{ total_allocated }}
+    </div>
+
+    <div class="col-md-4">
+        Remaining: ₹{{ remaining }}
+    </div>
+</div>
+
+<hr>
+
+<h4>Category Allocations</h4>
+
+<table class="table">
+    <tr>
+        <th>Category</th>
+        <th>Amount</th>
+    </tr>
+
+    {% for item in allocations %}
+    <tr>
+        <td>{{ item.category }}</td>
+        <td>₹{{ item.total_budget }}</td>
+    </tr>
+    {% endfor %}
+</table>

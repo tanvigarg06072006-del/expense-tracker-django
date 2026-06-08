@@ -1,7 +1,7 @@
-body{
-background:#f5f5f5    
+body {
+    background: #f5f7fb;
+    font-family: "Segoe UI", sans-serif;
 }
-
 .card{
 border-radius:20px;    
 }

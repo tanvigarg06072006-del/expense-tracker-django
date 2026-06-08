@@ -36,10 +36,6 @@
                     💱 Currency
                 </a>
 
-                <a href="{% url 'ai_suggestions' %}" class="btn btn-secondary fw-semibold rounded-pill px-4">
-                    🤖 AI Suggestions
-                </a>
-
             </div>
 
         </div>
@@ -84,36 +80,86 @@
 
         </div>
 
-        <!-- SEARCH -->
-
         <form method="GET" class="row g-3 mb-4">
 
-            <div class="col-md-5">
-                <input type="text"
-                       name="search"
-                       class="form-control form-control-lg rounded-pill"
-                       placeholder="Search expense">
-            </div>
+    <div class="col-md-4">
+        <label class="form-label">From Date</label>
+        <input type="date"
+               name="from_date"
+               class="form-control"
+               value="{{ request.GET.from_date }}">
+    </div>
 
-            <div class="col-md-4">
-                <select name="category" class="form-select form-select-lg rounded-pill">
-                    <option value="">All Categories</option>
-                    <option value="Food">Food</option>
-                    <option value="Travel">Travel</option>
-                    <option value="Shopping">Shopping</option>
-                    <option value="Other">Other</option>
-                </select>
-            </div>
+    <div class="col-md-4">
+        <label class="form-label">To Date</label>
+        <input type="date"
+               name="to_date"
+               class="form-control"
+               value="{{ request.GET.to_date }}">
+    </div>
 
-            <div class="col-md-3">
-                <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill">
-                    Apply Filters
-                </button>
-            </div>
+    <div class="col-md-4 d-flex align-items-end">
+        <button type="submit"
+                class="btn btn-primary w-100">
+            Search History
+        </button>
+    </div>
 
-        </form>
+</form>
+
+<div class="card shadow-lg border-0 mt-4 rounded-4">
+
+    <div class="card-body">
+
+        <h3 class="fw-bold mb-4">
+            📜 Expense History
+        </h3>
+
+        <div class="table-responsive">
+
+            <table class="table">
+
+                <thead class="table-light">
+                    <tr>
+                        <th>Title</th>
+                        <th>Amount</th>
+                        <th>Category</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for expense in history_expenses %}
+
+                    <tr>
+                        <td>{{ expense.title }}</td>
+                        <td>₹{{ expense.amount }}</td>
+                        <td>{{ expense.category }}</td>
+                        <td>{{ expense.created_at|date:"M d, Y" }}</td>
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">
+                            No expenses found
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
 
     </div>
+
+</div>
+
+   
 
     <!-- MONTHLY BREAKDOWN TABLE -->
 
@@ -198,7 +244,7 @@
 
                     <tbody>
 
-                        {% for expense in expenses %}
+                        {% for expense in recent_expenses %}
 
                         <tr>
 

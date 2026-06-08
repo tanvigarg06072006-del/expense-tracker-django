@@ -2,39 +2,53 @@
 
 {% block content %}
 
-<div class="card p-4">
+<div class="container mt-5 d-flex justify-content-center">
 
-    <h2>Add Expense</h2>
+    <div class="card border-0 shadow-lg rounded-4 p-4 w-100" style="max-width: 520px;">
 
-    <form method="POST">
-
-        {% csrf_token %}
-
-        {{ form.as_p }}
-
-        <div class="mb-3" id="noteContainer" style="display:none;">
-
-            <label class="form-label">
-                Note (Required for Other)
-            </label>
-
-            <input
-                type="text"
-                name="note"
-                id="noteField"
-                class="form-control"
-                placeholder="Enter expense details">
-
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <h2 class="fw-bold text-success">➕ Add Expense</h2>
+            <p class="text-muted">Track your daily spending easily</p>
         </div>
 
-        <button class="btn btn-success">
-            Save Expense
-        </button>
+        <!-- Form -->
+        <form method="POST">
 
-    </form>
+            {% csrf_token %}
+
+            <div class="mb-3">
+                {{ form.as_p }}
+            </div>
+
+            <!-- Note field (same logic, only UI improved) -->
+            <div class="mb-3" id="noteContainer" style="display:none;">
+
+                <label class="form-label fw-semibold text-dark">
+                    📝 Note (Required for Other)
+                </label>
+
+                <input
+                    type="text"
+                    name="note"
+                    id="noteField"
+                    class="form-control rounded-3 shadow-sm"
+                    placeholder="Enter expense details">
+
+            </div>
+
+            <!-- Button -->
+            <button class="btn btn-success w-100 rounded-3 shadow-sm py-2">
+                Save Expense
+            </button>
+
+        </form>
+
+    </div>
 
 </div>
 
+<!-- Your JS (UNCHANGED LOGIC) -->
 <script>
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -54,15 +68,12 @@ document.addEventListener("DOMContentLoaded", function() {
         if (this.value === "Other") {
 
             noteDiv.style.display = "block";
-
             document.getElementById("noteField").required = true;
 
         } else {
 
             noteDiv.style.display = "none";
-
             document.getElementById("noteField").required = false;
-
             document.getElementById("noteField").value = "";
 
         }

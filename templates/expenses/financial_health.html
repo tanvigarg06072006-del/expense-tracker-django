@@ -8,6 +8,11 @@
 
 <h2 class="text-center mb-4">📊 Financial Health Dashboard</h2>
 
+<div class="alert alert-info mb-4">
+    <h5>📋 Financial Health Summary</h5>
+    <p class="mb-0">{{ summary }}</p>
+</div>
+
 <div class="row g-3">
 
     <div class="col-md-4">
@@ -33,19 +38,35 @@
 
 </div>
 
-<hr>
-
-<h5>📈 Budget Tracking</h5>
-
-{{ chart_data|json_script:"chart-data" }}
-
-<div style="width: 100%; max-width: 600px; height: 250px; margin: auto;">
-    <canvas id="compareChart"></canvas>
-</div>
-
-<hr>
 
 <h5 class="text-center">📊 Category Budget vs Expense</h5>
+<div class="text-center mb-4">
+
+    <span class="me-4">
+        <span style="
+            display:inline-block;
+            width:15px;
+            height:15px;
+            background:#4D96FF;
+            border-radius:3px;">
+        </span>
+
+        Spent
+    </span>
+
+    <span>
+        <span style="
+            display:inline-block;
+            width:15px;
+            height:15px;
+            background:#FF6FB5;
+            border-radius:3px;">
+        </span>
+
+        Remaining Budget
+    </span>
+
+</div>
 
 {{ category_data|json_script:"category-data" }}
 
@@ -58,6 +79,7 @@
         <div style="width:180px; height:180px; margin:auto;">
             <canvas id="travelChart"></canvas>
         </div>
+        <p id="travelWarning" class="text-danger fw-bold mt-2"></p>
     </div>
 
     <div class="col-md-6 text-center">
@@ -65,34 +87,34 @@
         <div style="width:180px; height:180px; margin:auto;">
             <canvas id="billsChart"></canvas>
         </div>
+        <p id="billsWarning" class="text-danger fw-bold mt-2"></p>
     </div>
 
-    <!-- BAR CHARTS -->
+    
     <div class="col-md-4 text-center">
         <h6>🍔 Food (Daily/Weekly)</h6>
-        <div style="width:250px; height:200px; margin:auto;">
+        <div style="width:180px; height:180px; margin:auto;">
         <canvas id="foodChart"></canvas>
         </div>
+        <p id="foodWarning" class="text-danger fw-bold mt-2"></p>
     </div>
 
     <div class="col-md-4 text-center">
         <h6>🛍️ Shopping (Daily/Weekly)</h6>
-        <div style="width:250px; height:200px; margin:auto;">
+        <div style="width:180px; height:180px; margin:auto;">
         <canvas id="shoppingChart"></canvas>
         </div>
+        <p id="shoppingWarning" class="text-danger fw-bold mt-2"></p>
     </div>
 
     <div class="col-md-4 text-center">
         <h6>📦 Other (Daily/Weekly)</h6>
-        <div style="width:250px; height:200px; margin:auto;">
+        <div style="width:180px; height:180px; margin:auto;">
         <canvas id="otherChart"></canvas>
         </div>
+        <p id="otherWarning" class="text-danger fw-bold mt-2"></p>
     </div>
 
-</div>
-
-<div class="alert alert-info text-center fs-5 mt-4">
-    {{ status }}
 </div>
 
 </div>
@@ -104,89 +126,53 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    const data = JSON.parse(document.getElementById('chart-data').textContent);
     const cat = JSON.parse(document.getElementById('category-data').textContent);
 
-    new Chart(document.getElementById('compareChart'), {
-        type: 'line',
-        data: {
-            labels: data.map(i => i.day),
-            datasets: [
-                {
-                    label: "Ideal",
-                    data: data.map(i => i.ideal),
-                    borderColor: "blue",
-                    fill: false
-                },
-                {
-                    label: "Actual",
-                    data: data.map(i => i.actual),
-                    borderColor: "red",
-                    fill: false
-                }
-            ]
-        }
-    });
 
     function get(catName) {
         return cat.find(i => i.category === catName) || {};
     }
 
-    function pieChart(id, catName) {
+    function pieChart(id, catName,warningId) {
         const d = get(catName);
+        const remaining = Math.max((d.budget || 0) - (d.spent || 0),0);
         new Chart(document.getElementById(id), {
             type: "pie",
             data: {
                 labels: ["Spent", "Remaining Budget"],
                 datasets: [{
-                    data: [d.spent || 0, (d.budget || 0) - (d.spent || 0)]
-                }]
-            }
-        });
-    }
-
-    function barChart(id, catName) {
-        const d = get(catName);
-        new Chart(document.getElementById(id), {
-            type: "bar",
-            data: {
-                labels: ["Budget", "Spent"],
-                datasets: [{
-                    label: catName,
                     data: [
-                    Number(d.budget || 0),
-                    Number(d.spent || 0)
+                        d.spent || 0,
+                        remaining
                     ],
                     backgroundColor: [
-                    "#0d6efd",
-                    "#dc3545"
+                        "#4D96FF",
+                        "#FF6FB5"
                     ]
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y:{
-                        beginAtZero : true
-                        
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
+             plugins: {
+               legend: {
+                 display: false
             }
-        });
+        }
+    }
+});
+
+        if(Number(d.spent) > Number(d.budget)){
+            document.getElementById(warningId).innerHTML =
+                "⚠ Expense is greater than allocated budget";
+
+        }
     }
 
-    pieChart("travelChart", "Travel");
-    pieChart("billsChart", "Bills");
+    pieChart("travelChart", "Travel","travelWarning");
+    pieChart("billsChart", "Bills","billsWarning");
 
-    barChart("foodChart", "Food");
-    barChart("shoppingChart", "Shopping");
-    barChart("otherChart", "Other");
+    pieChart("foodChart", "Food","foodWarning");
+    pieChart("shoppingChart", "Shopping","shoppingWarning");
+    pieChart("otherChart", "Other","otherWarning");
 
 });
 </script>

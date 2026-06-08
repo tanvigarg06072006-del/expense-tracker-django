@@ -58,6 +58,12 @@ urlpatterns = [
     ),
 
     path(
+    "budget-history/<int:budget_id>/",
+    views.budget_history_detail,
+    name="budget_history_detail"
+),
+
+    path(
     "budget/edit/<int:budget_id>/",
     views.edit_budget,
     name="edit_budget"
