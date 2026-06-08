@@ -69,5 +69,5 @@ python manage.py runserver
 - accounts/ → Authentication
 - expenses/ → Expense Management
 - templates/ → HTML Templates
-- static/ → CSS, JS, Images
+- static/ → CSS, JS
 
